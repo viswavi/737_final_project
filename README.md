@@ -1,8 +1,9 @@
-# Final project for 11-737:
+# Final project for 11-737
 ## (Better understanding monolingual data copying)
+### by [@harlenesamra](https://github.com/harlenesamra), [@kinjaljain](https://github.com/kinjaljain), [@viswavi](https://github.com/viswavi)
 TODO: rename the repo to have a more declarative name
 
-# Table of contents (taken from [assignment 2 repo](https://github.com/viswavi/11-737-group/tree/master/assign2))
+## Table of contents (taken from [assignment 2 repo](https://github.com/viswavi/11-737-group/tree/master/assign2))
 1. [General setup instructions](#general)
 2. [Choosing new transfer languages](#harlene)
 3. [Using phonetic intermediate representation for training](#kinjal_1)
