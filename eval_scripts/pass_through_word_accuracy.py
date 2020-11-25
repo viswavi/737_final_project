@@ -19,10 +19,10 @@ class ParallelTranslation:
                     "target_predicted": self.target_predicted})
 
 
-def load_parallel(decoding_file):
+def load_parallel_from_decodings(decoding_file):
     parallel_sentences = {}
-    backtranslated_output = open(decoding_file).read().split("\n")
-    for line in tqdm(backtranslated_output):
+    translation_output = open(decoding_file).read().split("\n")
+    for line in tqdm(translation_output):
         if not line.startswith("S-") and not line.startswith("T-") and not line.startswith("D-"):
             continue
         line_type = line[0]
@@ -45,6 +45,17 @@ def load_parallel(decoding_file):
         if v.source_sentence is None or v.target_labeled is None or v.target_predicted is None:
             raise ValueError("All lines should be fully processed by this point - indicates an issue in decoding")
 
+    return parallel_sentences
+
+
+def load_parallel_from_labels(label_file):
+    parallel_sentences = {}
+    parallel_corpus = open(label_file).read().split("\n")
+    for i, line in tqdm(enumerate(parallel_corpus, start=1)):
+        src, eng = line.split("|||")
+        src = src.strip()
+        eng = eng.strip()
+        parallel_sentences[i] = ParallelTranslation(source_sentence=src, target_labeled=eng)
     return parallel_sentences
 
 
@@ -115,12 +126,48 @@ def measure_pass_through_prediction_rate(parallel_sentences, pass_through_words)
         print(f"Pass through precision: {pass_through_precision}")
     
 
+# Modified from NLTK
+# http://www.nltk.org/_modules/nltk/translate/bleu_score.html#modified_precision
+def modified_precision():
+    counts = Counter(ngrams(hypothesis, n)) if len(hypothesis) >= n else Counter()
+    # Extract a union of references' counts.
+    # max_counts = reduce(or_, [Counter(ngrams(ref, n)) for ref in references])
+    max_counts = {}
+    for reference in references:
+        reference_counts = (
+            Counter(ngrams(reference, n)) if len(reference) >= n else Counter()
+        )
+        for ngram in counts:
+            max_counts[ngram] = max(max_counts.get(ngram, 0), reference_counts[ngram])
+
+    # Assigns the intersection between hypothesis and references' counts.
+    clipped_counts = {
+        ngram: min(count, max_counts[ngram]) for ngram, count in counts.items()
+    }
+
+    numerator = sum(clipped_counts.values())
+    # Ensures that denominator is minimum 1 to avoid ZeroDivisionError.
+    # Usually this happens when the ngram order is > len(reference).
+    denominator = max(1, sum(counts.values()))
+
+
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
 
-    parser.add_argument("--decoding_file", type=str, required=True, help="Fairseq-generated file of translation decodings")
+    parser.add_argument("--decoding_file", type=str, default=None, help="Fairseq-generated file of translation decodings")
+    parser.add_argument("--label_file", type=str, required=True, help="Fairseq-generated file of translation decodings")
     args = parser.parse_args()
-    parallel_sentences = load_parallel(args.decoding_file)
+    if (args.decoding_file is None) == (args.label_file is None): # hacky xor
+        raise ValueError("Either a decoding file or labels file should be supplied - not both")
+
+    if args.decoding_file is not None:
+        parallel_sentences = load_parallel_from_decodings(args.decoding_file)
+    else:
+        parallel_sentences = load_parallel_from_labels(args.label_file)
+
+    from IPython import embed; embed()
+
+
     pass_through_words, src_pass_through_rate, trg_pass_through_rate = compute_pass_through_words(parallel_sentences)
     print(f"Source pass-through word rate: {src_pass_through_rate}")
     print(f"Target pass-through word rate: {trg_pass_through_rate}")
