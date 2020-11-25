@@ -52,6 +52,9 @@ def load_parallel_from_labels(label_file):
     parallel_sentences = {}
     parallel_corpus = open(label_file).read().split("\n")
     for i, line in tqdm(enumerate(parallel_corpus, start=1)):
+        if len(line.split()) == 0:
+            continue
+
         src, eng = line.split("|||")
         src = src.strip()
         eng = eng.strip()
@@ -165,11 +168,10 @@ if __name__ == "__main__":
     else:
         parallel_sentences = load_parallel_from_labels(args.label_file)
 
-    from IPython import embed; embed()
-
-
     pass_through_words, src_pass_through_rate, trg_pass_through_rate = compute_pass_through_words(parallel_sentences)
     print(f"Source pass-through word rate: {src_pass_through_rate}")
     print(f"Target pass-through word rate: {trg_pass_through_rate}")
 
-    measure_pass_through_prediction_rate(parallel_sentences, pass_through_words)
+    if args.decoding_file:
+        # If a decoding file is provided, then also measure pass-through prediction rate from generated translations.
+        measure_pass_through_prediction_rate(parallel_sentences, pass_through_words)
