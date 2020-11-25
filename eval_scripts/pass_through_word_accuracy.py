@@ -113,7 +113,7 @@ def measure_pass_through_prediction_rate(parallel_sentences, pass_through_words)
     else:
         pass_through_precision  = float(correct_pass_through_predictions) / total_pass_through_predictions
         print(f"Pass through precision: {pass_through_precision}")
-    
+
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
@@ -124,5 +124,5 @@ if __name__ == "__main__":
     pass_through_words, src_pass_through_rate, trg_pass_through_rate = compute_pass_through_words(parallel_sentences)
     print(f"Source pass-through word rate: {src_pass_through_rate}")
     print(f"Target pass-through word rate: {trg_pass_through_rate}")
-    
+
     measure_pass_through_prediction_rate(parallel_sentences, pass_through_words)
