@@ -129,31 +129,6 @@ def measure_pass_through_prediction_rate(parallel_sentences, pass_through_words)
         print(f"Pass through precision: {pass_through_precision}")
 
 
-# Modified from NLTK
-# http://www.nltk.org/_modules/nltk/translate/bleu_score.html#modified_precision
-def modified_precision():
-    counts = Counter(ngrams(hypothesis, n)) if len(hypothesis) >= n else Counter()
-    # Extract a union of references' counts.
-    # max_counts = reduce(or_, [Counter(ngrams(ref, n)) for ref in references])
-    max_counts = {}
-    for reference in references:
-        reference_counts = (
-            Counter(ngrams(reference, n)) if len(reference) >= n else Counter()
-        )
-        for ngram in counts:
-            max_counts[ngram] = max(max_counts.get(ngram, 0), reference_counts[ngram])
-
-    # Assigns the intersection between hypothesis and references' counts.
-    clipped_counts = {
-        ngram: min(count, max_counts[ngram]) for ngram, count in counts.items()
-    }
-
-    numerator = sum(clipped_counts.values())
-    # Ensures that denominator is minimum 1 to avoid ZeroDivisionError.
-    # Usually this happens when the ngram order is > len(reference).
-    denominator = max(1, sum(counts.values()))
-
-
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
 
