@@ -25,6 +25,8 @@ do
     fi
 done
 
+./preprocess_scripts/process_backtranslated_data.sh monoaugment
+
 # Prepare and train for Bengali
 printf "\n\nPrepping bilingual data for monoaugment, Ben-Eng\n\n"
 ./preprocess_scripts/make-ted-bilingual.sh ben monoaugment_for_M2O
