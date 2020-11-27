@@ -43,6 +43,7 @@ for i in ${!LANS[*]}; do
   for f in "$RAW_DDIR"/"$LAN"_eng/*.orig.*-eng  ; do
     src=`echo $f | sed 's/-eng$//g'`
     trg=`echo $f | sed 's/\.[^\.]*$/.eng/g'`
+
     if [ ! -f "$src" ]; then
       echo "src=$src, trg=$trg"
       python preprocess_scripts/cut-corpus.py 0 < $f > $src

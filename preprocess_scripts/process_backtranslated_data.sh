@@ -6,9 +6,11 @@
 # or
 # data_monoaugment_for_O2M and data_monoaugment_for_M2O
 
-if [[ $# -ge 1 && $1 -eq "monoaugment" ]]; then
+if [[ $# -ge 1 && $1 == "monoaugment" ]]; then
     augmentation_method=monoaugment
-elif [[ $# -eq 0  || $1 -ne "backtranslated" ]]; then
+elif [[ $# -ge 1 && $1 == "both" ]]; then
+    augmentation_method=monoaugment
+elif [[ $# -eq 0  || $1 == "backtranslated" ]]; then
     augmentation_method=backtranslated
 else
     echo "Unknown augmentation method $1 received - give either monolingual (default) or monoaugment"
@@ -23,7 +25,7 @@ for direction in O2M M2O; do
     mkdir -p ${output_directory}/ted_raw
 done
 
-for lang in bel aze tur rus; do
+for lang in bel aze tur rus kur mar ben; do
     for direction in O2M M2O; do
         if [ $direction = O2M ]; then
             srclang=eng
@@ -35,6 +37,9 @@ for lang in bel aze tur rus; do
 
         clean_directory=data/ted_raw/${lang}_eng
         output_directory=${backtranslation_data_prefix}_${direction}/ted_raw/${lang}_eng
+
+
+        echo creating directory $output_directory
         backtranslation_directory=data/monolingual_data
         mkdir -p $output_directory
 
@@ -54,6 +59,18 @@ for lang in bel aze tur rus; do
                 --backtranslated_data $backtranslated_data \
                 --clean_target_data $clean_target_data \
                 --clean_parallel_data_path $clean_parallel_corpus_path \
+                --backtranslation_augmentation \
+                --shuffle_lines
+        elif [ $augmentation_method = both ]; then
+            # Produce training file, using a concatenation of backtranslated data, monolingual copied data, and clean data
+            printf "\n\n\n\n\ntest\n\n\n\n\n"
+            python preprocess_scripts/process_translation_output.py \
+                --output_path $training_output_path \
+                --backtranslated_data $backtranslated_data \
+                --clean_target_data $clean_target_data \
+                --clean_parallel_data_path $clean_parallel_corpus_path \
+                --backtranslation_augmentation \
+                --monolingual_data_augmentation \
                 --shuffle_lines
         else
             python preprocess_scripts/process_translation_output.py \
@@ -65,5 +82,3 @@ for lang in bel aze tur rus; do
         fi
     done
 done
-        
-    

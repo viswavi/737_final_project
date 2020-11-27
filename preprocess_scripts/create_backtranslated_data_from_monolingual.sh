@@ -13,12 +13,12 @@ fi
 if [[ $# -eq 2 ]]; then
     data_size=$2
 else
-    data_size=6000
+    data_size=15000
 fi
 
 sample_or_beam=`if [ $sample -eq 1 ]; then echo "--sampling --beam 1 --nbest 1"; else echo "--beam 5"; fi`
 
-for i in "aze data/monolingual_data/aze/aze_newscrawl_2013_30K/aze_newscrawl_2013_30K-sentences.txt" "bel data/monolingual_data/bel/bel_newscrawl_2017_30K/bel_newscrawl_2017_30K-sentences.txt" "rus data/monolingual_data/rus/rus_newscrawl-public_2018_30K/rus_newscrawl-public_2018_30K-sentences.txt" "eng data/monolingual_data/eng/eng_newscrawl-public_2018_30K/eng_newscrawl-public_2018_30K-sentences.txt" "tur data/monolingual_data/tur/tur_newscrawl_2018_30K/tur_newscrawl_2018_30K-sentences.txt"
+for i in "aze data/monolingual_data/aze/aze_newscrawl_2013_30K/aze_newscrawl_2013_30K-sentences.txt" "bel data/monolingual_data/bel/bel_newscrawl_2017_30K/bel_newscrawl_2017_30K-sentences.txt" "rus data/monolingual_data/rus/rus_newscrawl-public_2018_30K/rus_newscrawl-public_2018_30K-sentences.txt" "eng data/monolingual_data/eng/eng_newscrawl-public_2018_30K/eng_newscrawl-public_2018_30K-sentences.txt" "tur data/monolingual_data/tur/tur_newscrawl_2018_30K/tur_newscrawl_2018_30K-sentences.txt" "mar data/monolingual_data/mar/mar_newscrawl_2016_30K/mar_newscrawl_2016_30K-sentences.txt" "kur data/monolingual_data/kur/kur_newscrawl_2011_30K-sentences.txt" "ben data/monolingual_data/ben/ben_newscrawl_2017_30K/ben_newscrawl_2017_30K-sentences.txt"
 do
     set -- $i
     lang=$1
@@ -45,7 +45,7 @@ TOKENIZER=mosesdecoder/scripts/tokenizer/tokenizer.perl
 VOCAB_SIZE=8000
 
 
-for lrl in aze bel #rus tur
+for lrl in ben kur mar aze bel rus tur
 do
     echo "lrl: ${lrl}"
     # Eng -> others is O2M
@@ -84,7 +84,7 @@ do
                 lang_spm=azetur
             elif [[ $lang = "rus" && $style = "multilingual"  || $lang = "bel" && $style = "multilingual" ]]; then
                 lang_spm=belrus
-            elif [[ $lang = "aze" || $lang = "bel" || $lang = "rus" || $lang = "tur" ]]; then
+            elif [[ $lang = "aze" || $lang = "bel" || $lang = "rus" || $lang = "tur"  || $lang = "kur" || $lang = "mar" || $lang = "ben" ]]; then
                 lang_spm=$lang
             else
                 echo "Error 2"
@@ -176,8 +176,17 @@ do
                     ${sample_or_beam} ${multilingual_parameters} \
                     --input $bpe_path \
                      fairseq/data-bin/ted_${model_dir}/${direction} > data/monolingual_data/${lang}/${trglang}_${style}_translated.txt
+
+                CUDA_VISIBLE_DEVICE=$GPU_DEVICE fairseq-generate \
+                    --gen-subset test \
+                    --path fairseq/checkpoints/ted_${model_dir}/${direction}/checkpoint_best.pt \
+                    --batch-size 32 \
+	                --tokenizer moses \
+                    --remove-bpe sentencepiece \
+                    ${sample_or_beam} ${multilingual_parameters} \
+	                --scoring sacrebleu \
+                    $DATA_DIR  > "$MODEL_DIR"/test_b5.log
             done
         done
     done
 done
-

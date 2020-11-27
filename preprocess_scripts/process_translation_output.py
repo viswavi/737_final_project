@@ -36,6 +36,8 @@ def main():
         help='Clean "target" text data to pair with backtranslated "source"')
     parser.add_argument('--clean_target_data', '-clean',
         help='Whether to combine backtranslated data with original target-to-source data')
+    parser.add_argument('--backtranslation_augmentation', '-bt',
+        help='Perform data augmentation via backtranslation', action='store_true')
     parser.add_argument('--monolingual_data_augmentation', '-mono',
         help='If true, copy target data as "source" data', action='store_true')
     parser.add_argument('--shuffle_lines', action='store_true',
@@ -46,7 +48,7 @@ def main():
     clean_target_data = open(args.clean_target_data).read().split("\n")
     outlines = []
 
-    if args.backtranslated_data is not None:
+    if args.backtranslation_augmentation:
         backtranslated_output = open(args.backtranslated_data).read().split("\n")
         for line in tqdm(backtranslated_output):
             if len(line) <= 6:
@@ -59,7 +61,7 @@ def main():
             line_number = int(line.split('\t')[0][2:])
             source_line = clean_target_data[line_number]
             outlines.append(f"{source_line} ||| {target_line}")
-    elif args.monolingual_data_augmentation:
+    if args.monolingual_data_augmentation:
         for source_line in clean_target_data:
             if len(source_line.split()) > 0:
                 # skipping empty lines, add monolingual data as source and target
