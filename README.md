@@ -119,11 +119,14 @@ https://wortschatz.uni-leipzig.de/en/download/azerbaijani (Newscrawl, 2013, 30K)
 https://wortschatz.uni-leipzig.de/en/download/belarusian/ (Newscrawl, 2017, 30K)\
 https://wortschatz.uni-leipzig.de/en/download/english (Newscrawl-public, 2018, 30K)\
 https://wortschatz.uni-leipzig.de/en/download/russian/ (Newscrawl-public, 2018, 30K)\
-https://wortschatz.uni-leipzig.de/en/download/turkish (Newscrawl, 2018, 30K)
+https://wortschatz.uni-leipzig.de/en/download/turkish (Newscrawl, 2018, 30K)\
+https://wortschatz.uni-leipzig.de/en/download/marathi (Newscrawl 2016, 30K)\
+https://wortschatz.uni-leipzig.de/en/download/kurdish (Newscrawl 2011, 30K)\
+https://wortschatz.uni-leipzig.de/en/download/bengali (Newscrawl 2017, 30K)
 
 ```
 mkdir data/monolingual_data
-for lang in aze bel rus tur eng; do
+for lang in aze bel rus tur eng kur mar ben; do
     mkdir data/monolingual_data/${lang}
 done
 ```
