@@ -114,11 +114,6 @@ do
 
             for direction in O2M M2O
             do
-                # TODO(Vijay): delete the below chunk
-                if [[ $lang = aze && $direction = O2M ]]; then
-                    continue
-                fi
-                # TODO(Vijay): delete the above chunk
                 printf "\n$lang $direction\n"
 
                 if [ $direction = O2M ]; then
@@ -166,26 +161,28 @@ do
                     multilingual_parameters=
                 fi
 
-                fairseq-interactive \
+                BINARIZED_DDIR=fairseq/data-bin-monolingual/ted_${srclang}_${trglang}_spm"$VOCAB_SIZE"/
+                mkdir -p $BINARIZED_DDIR/${srclang}_${trglang}/
+
+                cp $bpe_path  $bpe_path.$srclang
+                CUDA_VISIBLE_DEVICE=$GPU_DEVICE fairseq-preprocess \
+                    --joined-dictionary \
+                    --only-source \
+                    --source-lang ${srclang} \
+                    --target-lang ${trglang} \
+                    --srcdict fairseq/data-bin/ted_${model_dir}/${direction}/dict.${srclang}.txt \
+                    --testpref $bpe_path \
+                    --destdir $BINARIZED_DDIR/${srclang}_${trglang}/ \
+                    --workers 10; \
+                cp fairseq/data-bin/ted_${model_dir}/${direction}/dict.${trglang}.txt $BINARIZED_DDIR/${srclang}_${trglang}/
+
+                CUDA_VISIBLE_DEVICE=$GPU_DEVICE fairseq-generate $BINARIZED_DDIR/${srclang}_${trglang}/ \
                     --path fairseq/checkpoints/ted_${model_dir}/${direction}/checkpoint_best.pt \
                     --batch-size 32 \
-                    --buffer-size 32 \
                     --tokenizer moses \
                     --remove-bpe sentencepiece \
-                    --scoring sacrebleu \
                     ${sample_or_beam} ${multilingual_parameters} \
-                    --input $bpe_path \
-                     fairseq/data-bin/ted_${model_dir}/${direction} > data/monolingual_data/${lang}/${trglang}_${style}_translated.txt
-
-                CUDA_VISIBLE_DEVICE=$GPU_DEVICE fairseq-generate \
-                    --gen-subset test \
-                    --path fairseq/checkpoints/ted_${model_dir}/${direction}/checkpoint_best.pt \
-                    --batch-size 32 \
-	                --tokenizer moses \
-                    --remove-bpe sentencepiece \
-                    ${sample_or_beam} ${multilingual_parameters} \
-	                --scoring sacrebleu \
-                    $DATA_DIR  > "$MODEL_DIR"/test_b5.log
+                    --scoring sacrebleu  > data/monolingual_data/${lang}/${trglang}_${style}_translated.txt
             done
         done
     done
