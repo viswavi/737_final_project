@@ -8,8 +8,8 @@
 
 if [[ $# -ge 1 && $1 == "monoaugment" ]]; then
     augmentation_method=monoaugment
-elif [[ $# -ge 1 && $1 == "both" ]]; then
-    augmentation_method=monoaugment
+elif [[ $# -ge 1 && $1 == "mono_and_bt" ]]; then
+    augmentation_method=mono_and_bt
 elif [[ $# -eq 0  || $1 == "backtranslated" ]]; then
     augmentation_method=backtranslated
 else
@@ -59,16 +59,17 @@ for lang in bel aze tur rus kur mar ben; do
                 --backtranslated_data $backtranslated_data \
                 --clean_target_data $clean_target_data \
                 --clean_parallel_data_path $clean_parallel_corpus_path \
+                --direction ${direction} \
                 --backtranslation_augmentation \
                 --shuffle_lines
-        elif [ $augmentation_method = both ]; then
+        elif [ $augmentation_method = mono_and_bt ]; then
             # Produce training file, using a concatenation of backtranslated data, monolingual copied data, and clean data
-            printf "\n\n\n\n\ntest\n\n\n\n\n"
             python preprocess_scripts/process_translation_output.py \
                 --output_path $training_output_path \
                 --backtranslated_data $backtranslated_data \
                 --clean_target_data $clean_target_data \
                 --clean_parallel_data_path $clean_parallel_corpus_path \
+                --direction ${direction} \
                 --backtranslation_augmentation \
                 --monolingual_data_augmentation \
                 --shuffle_lines
@@ -77,6 +78,7 @@ for lang in bel aze tur rus kur mar ben; do
                 --output_path $training_output_path \
                 --clean_target_data $clean_target_data \
                 --clean_parallel_data_path $clean_parallel_corpus_path \
+                --direction ${direction} \
                 --monolingual_data_augmentation \
                 --shuffle_lines
         fi

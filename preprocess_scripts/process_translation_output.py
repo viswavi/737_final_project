@@ -34,6 +34,8 @@ def main():
         help='File containing the stdout dumped from running translation')
     parser.add_argument('--clean_parallel_data_path', '-f',
         help='Clean "target" text data to pair with backtranslated "source"')
+    parser.add_argument('--direction', required=True,
+        help='M2O (training foreign-to-English model) or O2M (English-to-foreign)')
     parser.add_argument('--clean_target_data', '-clean',
         help='Whether to combine backtranslated data with original target-to-source data')
     parser.add_argument('--backtranslation_augmentation', '-bt',
@@ -57,10 +59,15 @@ def main():
             if line_type != "D":
                 continue
 
-            target_line = line.split('\t')[2]
+            backtranslated_sentence = line.split('\t')[2]
             line_number = int(line.split('\t')[0][2:])
-            source_line = clean_target_data[line_number]
-            outlines.append(f"{source_line} ||| {target_line}")
+            clean_target_line = clean_target_data[line_number]
+            if args.direction == "O2M":
+                outlines.append(f"{clean_target_line} ||| {backtranslated_sentence}")
+            elif args.direction == "M2O":
+                outlines.append(f"{backtranslated_sentence} ||| {clean_target_line}")
+            else:
+                raise ValueError("Direction should be O2M or M2O")
     if args.monolingual_data_augmentation:
         for source_line in clean_target_data:
             if len(source_line.split()) > 0:
