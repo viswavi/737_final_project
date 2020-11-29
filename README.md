@@ -25,7 +25,8 @@ download_data.py
 ``` 
 
 ### fairseq:
-The preprocess and experiment scripts work with fairseq. To use fairseq, first clone and install it from [here](https://github.com/pytorch/fairseq/).
+The preprocess and experiment scripts work with fairseq. To use fairseq, first clone and install it from [here](https://github.com/pytorch/fairseq/). We have found that older versions of fairseq (specifically 0.9.0) cause problems with our evaluation scripts, but have tested successfully with Fairseq commit hash 5e82514d687289a73a6dec33b555217acd97cb0d, so that is recommended. 
+
 You might need to install two more python packages. Simply do:
 ```
 pip install importlib_metadata
@@ -141,7 +142,7 @@ This script requires that you have bilingual models in the fairseq/checkpoints d
 
 Here, select whether you want to process data in "backtranslated" or "monoaugment" mode.
 ```
-./preprocess_scripts/process_backtranslated_data.sh <backtranslated/monoaugment>
+./preprocess_scripts/process_backtranslated_data.sh <backtranslated/monoaugment/mono_and_bt>
 ```
 This script collects the output of the previous step and formats it into fairseq-friendly training data directories. We produce two separate data directories: one for O2M training files and one for M2O training (each marked with a suffix).
 
