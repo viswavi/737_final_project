@@ -22,6 +22,7 @@
 import argparse
 import random
 from tqdm import tqdm
+import re
 
 def main():
     parser = argparse.ArgumentParser(description=(
@@ -45,6 +46,8 @@ def main():
     parser.add_argument('--monolingual_noisy_data_augmentation', '-mono_noise',
         help='If true, copy target data as "source" data and swap n pair of words', action='store_true')
     parser.add_argument('--swap_num_pairs', '-n', type=int, default=1, help='Num of pairs to swap, if -mono_noise is true')
+    parser.add_argument('--tagged_backtranslation', '-tagged', 
+        help='If true, training data will be prepended with noisy or clean', action='store_true')
     parser.add_argument('--shuffle_lines', action='store_true',
         help='Whether or not to shuffle lines of data')
     args = parser.parse_args()
@@ -66,9 +69,15 @@ def main():
             line_number = int(line.split('\t')[0][2:])
             clean_target_line = clean_target_data[line_number]
             if args.direction == "O2M":
-                outlines.append(f"{clean_target_line} ||| {backtranslated_sentence}")
+                if args.tagged_backtranslation:
+                    outlines.append(f"{clean_target_line} ||| <noisy> {backtranslated_sentence}")
+                else:
+                    outlines.append(f"{clean_target_line} ||| {backtranslated_sentence}")
             elif args.direction == "M2O":
-                outlines.append(f"{backtranslated_sentence} ||| {clean_target_line}")
+                if args.tagged_backtranslation:
+                    outlines.append(f"<noisy> {backtranslated_sentence} ||| {clean_target_line}")
+                else:
+                    outlines.append(f"{backtranslated_sentence} ||| {clean_target_line}")
             else:
                 raise ValueError("Direction should be O2M or M2O")
     if args.monolingual_data_augmentation:
@@ -89,6 +98,11 @@ def main():
         clean_data_lines = open(args.clean_parallel_data_path).read().split("\n")
         # Drop final row, which is empty
         clean_data_lines = clean_data_lines[:-1]
+        if args.tagged_backtranslation:
+            if args.direction == 'O2M':
+                clean_data_lines = [i.replace('|||', '||| <clean>') for i in clean_data_lines]
+            else:
+                clean_data_lines = ['<clean> %s' % i for i in clean_data_lines]
         outlines.extend(clean_data_lines)
 
     if args.shuffle_lines:

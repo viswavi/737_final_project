@@ -12,6 +12,8 @@ elif [[ $# -ge 1 && $1 == "mono_and_bt" ]]; then
     augmentation_method=mono_and_bt
 elif [[ $# -eq 0  || $1 == "backtranslated" ]]; then
     augmentation_method=backtranslated
+elif [[ $# -eq 0  || $1 == "tagged_backtranslated" ]]; then 
+    augmentation_method=tagged_backtranslated
 elif [[ $# -eq 1  || $1 == "noisy_monoaugment" ]]; then
     augmentation_method=noisy_monoaugment
     swap_num_pairs=2
@@ -23,6 +25,7 @@ else
     exit 1
 fi
 
+echo $augmentation_method
 backtranslation_data_prefix=data_${augmentation_method}_for
 
 for direction in O2M M2O; do
@@ -54,6 +57,9 @@ for lang in bel aze tur rus kur mar ben; do
         cp ${clean_directory}/ted-dev.orig.${lang}-eng $output_directory/
 
         training_output_path=$(pwd)/${output_directory}/ted-train.orig.${lang}-eng
+        dev_output_path=$(pwd)/${output_directory}/ted-dev.orig.${lang}-eng
+        test_output_path=$(pwd)/${output_directory}/ted-test.orig.${lang}-eng
+
         backtranslated_data=$(pwd)/${backtranslation_directory}/${lang}/${srclang}_bilingual_translated.txt
         clean_target_data=$(pwd)/${backtranslation_directory}/${trglang}/${trglang}_monolingual.txt
         clean_parallel_corpus_path=$(pwd)/${clean_directory}/ted-train.orig.${lang}-eng
@@ -80,15 +86,34 @@ for lang in bel aze tur rus kur mar ben; do
                 --monolingual_data_augmentation \
                 --shuffle_lines
     	elif [ $augmentation_method = noisy_monoaugment ]; then
-	    # Produce training file, using a concatenation of noisy monolingual data and clean data
-	    python preprocess_scripts/process_translation_output.py \
-		--output_path $training_output_path \
-		--clean_target_data $clean_target_data \
-		--clean_parallel_data_path $clean_parallel_corpus_path \
-		--direction ${direction} \
-		--monolingual_noisy_data_augmentation \
-		--swap_num_pairs ${swap_num_pairs} \
-		--shuffle_lines
+            # Produce training file, using a concatenation of noisy monolingual data and clean data
+            python preprocess_scripts/process_translation_output.py \
+            --output_path $training_output_path \
+            --clean_target_data $clean_target_data \
+            --clean_parallel_data_path $clean_parallel_corpus_path \
+            --direction ${direction} \
+            --monolingual_noisy_data_augmentation \
+            --swap_num_pairs ${swap_num_pairs} \
+            --shuffle_lines
+        elif [ $augmentation_method = tagged_backtranslated ]; then
+            # Produce training file, using a concatenation of backtranslated data (preppended with the tag 'noisy') and clean data (prepended with the tag 'clean')
+            python preprocess_scripts/process_translation_output.py \
+            --output_path $training_output_path \
+            --backtranslated_data $backtranslated_data \
+            --clean_target_data $clean_target_data \
+            --clean_parallel_data_path $clean_parallel_corpus_path \
+            --direction ${direction} \
+            --backtranslation_augmentation \
+            --tagged_backtranslation \
+            --shuffle_lines
+
+            if [ $direction = O2M ]; then
+                sed -e 's/|||/||| <clean>/' -i $dev_output_path
+                sed -e 's/|||/||| <clean>/' -i $test_output_path
+            else
+                sed -e 's/^/<clean> /' -i $dev_output_path
+                sed -e 's/^/<clean> /' -i $test_output_path
+            fi
 	else
             python preprocess_scripts/process_translation_output.py \
                 --output_path $training_output_path \
