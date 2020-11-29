@@ -142,7 +142,7 @@ This script requires that you have bilingual models in the fairseq/checkpoints d
 
 Here, select whether you want to process data in "backtranslated" or "monoaugment" mode.
 ```
-./preprocess_scripts/process_backtranslated_data.sh <backtranslated/monoaugment>
+./preprocess_scripts/process_backtranslated_data.sh <backtranslated/monoaugment/mono_and_bt>
 ```
 This script collects the output of the previous step and formats it into fairseq-friendly training data directories. We produce two separate data directories: one for O2M training files and one for M2O training (each marked with a suffix).
 
