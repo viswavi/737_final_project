@@ -19,18 +19,20 @@ if __name__ == "__main__":
             continue
         language_pair_corrected = language_pair.replace('_', '-')
         test_corpus_file = os.path.join(language_dir, f"ted-test.orig.{language_pair_corrected}")
+        train_corpus_file = os.path.join(language_dir, f"ted-train.orig.{language_pair_corrected}")
         if not os.path.isfile(test_corpus_file):
             print(f"No parallel test corpus found in {test_corpus_file}")
             continue
 
         parallel_sentences = load_parallel_from_labels(test_corpus_file)
         test_size = len(open(test_corpus_file).read().split("\n"))
+        train_size = len(load_parallel_from_labels(train_corpus_file))
         _, _, trg_pass_through_rate = compute_pass_through_words(parallel_sentences)
-        pass_through_rate_by_language[language_pair] = (trg_pass_through_rate, test_size)
+        pass_through_rate_by_language[language_pair] = (trg_pass_through_rate, test_size, train_size)
     
     pass_through_rate_by_language = {k: v for k, v in sorted(pass_through_rate_by_language.items(), key=lambda item: item[1][0])}
 
     print("Pass-through rates by language:")
-    print(f"Lang code\tPass Through Rate\t# of rows in test set")
-    for lang, (pass_through_rate, test_size) in pass_through_rate_by_language.items():
-        print(f"{lang}\t\t{round(pass_through_rate, 4)}\t\t\t{test_size}")
+    print(f"Lang code\tPass Through Rate\t# of rows in test set\t# of rows in train set")
+    for lang, (pass_through_rate, test_size, train_size) in pass_through_rate_by_language.items():
+        print(f"{lang}\t\t{round(pass_through_rate, 4)}\t\t\t{test_size}\t\t\t{train_size}")
