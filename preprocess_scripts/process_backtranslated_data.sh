@@ -12,6 +12,12 @@ elif [[ $# -ge 1 && $1 == "mono_and_bt" ]]; then
     augmentation_method=mono_and_bt
 elif [[ $# -eq 0  || $1 == "backtranslated" ]]; then
     augmentation_method=backtranslated
+elif [[ $# -eq 1  || $1 == "noisy_monoaugment" ]]; then
+    augmentation_method=noisy_monoaugment
+    swap_num_pairs=2
+    if [[ $# -eq 2 ]]; then
+    	swap_num_pairs=$2
+    fi
 else
     echo "Unknown augmentation method $1 received - give either monolingual (default) or monoaugment"
     exit 1
@@ -73,7 +79,17 @@ for lang in bel aze tur rus kur mar ben; do
                 --backtranslation_augmentation \
                 --monolingual_data_augmentation \
                 --shuffle_lines
-        else
+    	elif [ $augmentation_method = noisy_monoaugment ]; then
+	    # Produce training file, using a concatenation of noisy monolingual data and clean data
+	    python preprocess_scripts/process_translation_output.py \
+		--output_path $training_output_path \
+		--clean_target_data $clean_target_data \
+		--clean_parallel_data_path $clean_parallel_corpus_path \
+		--direction ${direction} \
+		--monolingual_noisy_data_augmentation \
+		--swap_num_pairs ${swap_num_pairs} \
+		--shuffle_lines
+	else
             python preprocess_scripts/process_translation_output.py \
                 --output_path $training_output_path \
                 --clean_target_data $clean_target_data \
