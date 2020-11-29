@@ -45,6 +45,8 @@ def main():
     parser.add_argument('--monolingual_noisy_data_augmentation', '-mono_noise',
         help='If true, copy target data as "source" data and swap n pair of words', action='store_true')
     parser.add_argument('--swap_num_pairs', '-n', type=int, default=1, help='Num of pairs to swap, if -mono_noise is true')
+    parser.add_argument('--tagged_backtranslation', '-tagged', 
+        help='If true, training data will be prepended with noisy or clean', action='store_true')
     parser.add_argument('--shuffle_lines', action='store_true',
         help='Whether or not to shuffle lines of data')
     args = parser.parse_args()
@@ -85,10 +87,17 @@ def main():
                 noisy_line = add_noise(source_line, args.swap_num_pairs)
                 outlines.append(f"{noisy_line} ||| {source_line}")
 
+    if args.tagged_backtranslation:
+        # Add noisy label to backtranslated data
+        outlines = ['noisy %s' % i for i in outlines]
+        # Add clean labels to dev and test
+
     if args.clean_parallel_data_path is not None:
         clean_data_lines = open(args.clean_parallel_data_path).read().split("\n")
         # Drop final row, which is empty
         clean_data_lines = clean_data_lines[:-1]
+        if args.tagged_backtranslation:
+            clean_data_lines = ['clean %s' % i for i in clean_data_lines]
         outlines.extend(clean_data_lines)
 
     if args.shuffle_lines:
