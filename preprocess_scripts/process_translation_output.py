@@ -94,6 +94,11 @@ def main():
                 noisy_line = add_noise(source_line, args.swap_num_pairs)
                 outlines.append(f"{noisy_line} ||| {source_line}")
 
+    if args.tagged_backtranslation:
+        # Add noisy label to backtranslated data
+        outlines = ['noisy %s' % i for i in outlines]
+        # Add clean labels to dev and test
+
     if args.clean_parallel_data_path is not None:
         clean_data_lines = open(args.clean_parallel_data_path).read().split("\n")
         # Drop final row, which is empty
