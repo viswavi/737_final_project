@@ -14,6 +14,8 @@ elif [[ $# -eq 0  || $1 == "backtranslated" ]]; then
     augmentation_method=backtranslated
 elif [[ $# -eq 0  || $1 == "tagged_backtranslated" ]]; then 
     augmentation_method=tagged_backtranslated
+elif [[ $# -eq 0  || $1 == "filtered_tagged_backtranslated" ]]; then 
+    augmentation_method=filtered_tagged_backtranslated
 elif [[ $# -eq 1  || $1 == "noisy_monoaugment" ]]; then
     augmentation_method=noisy_monoaugment
     swap_num_pairs=2
@@ -106,14 +108,18 @@ for lang in bel aze tur rus kur mar ben; do
             --backtranslation_augmentation \
             --tagged_backtranslation \
             --shuffle_lines
-
-            if [ $direction = O2M ]; then
-                sed -e 's/|||/||| <clean>/' -i $dev_output_path
-                sed -e 's/|||/||| <clean>/' -i $test_output_path
-            else
-                sed -e 's/^/<clean> /' -i $dev_output_path
-                sed -e 's/^/<clean> /' -i $test_output_path
-            fi
+        elif [ $augmentation_method = filtered_tagged_backtranslated ]; then
+            # Produce training file, using a concatenation of backtranslated data (preppended with the tag 'noisy') and clean data (prepended with the tag 'clean')
+            python preprocess_scripts/process_translation_output.py \
+            --output_path $training_output_path \
+            --backtranslated_data $backtranslated_data \
+            --clean_target_data $clean_target_data \
+            --clean_parallel_data_path $clean_parallel_corpus_path \
+            --direction ${direction} \
+            --backtranslation_augmentation \
+            --tagged_backtranslation \
+            --filtered_tagged \
+            --shuffle_lines
 	else
             python preprocess_scripts/process_translation_output.py \
                 --output_path $training_output_path \
@@ -123,5 +129,14 @@ for lang in bel aze tur rus kur mar ben; do
                 --monolingual_data_augmentation \
                 --shuffle_lines
         fi
+    if [[ $augmentation_method = tagged_backtranslated || $augmentation_method = filtered_tagged_backtranslated ]]; then
+        if [ $direction = O2M ]; then
+            sed -e 's/|||/||| <clean>/' -i $dev_output_path
+            sed -e 's/|||/||| <clean>/' -i $test_output_path
+        else
+            sed -e 's/^/<clean> /' -i $dev_output_path
+            sed -e 's/^/<clean> /' -i $test_output_path
+        fi
+    fi
     done
 done
