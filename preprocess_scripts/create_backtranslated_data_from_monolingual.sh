@@ -10,11 +10,6 @@ if [[ $# -ge 1 && $1 -eq "beam" ]]; then
 else
     sample=1
 fi
-if [[ $# -eq 2 ]]; then
-    data_size=$2
-else
-    data_size=15000
-fi
 
 sample_or_beam=`if [ $sample -eq 1 ]; then echo "--sampling --beam 1 --nbest 1"; else echo "--beam 5"; fi`
 
@@ -25,17 +20,15 @@ do
     raw_monolingual_path=$2
     processed_monolingual_path=data/monolingual_data/${lang}/${lang}_monolingual.txt
 
-    if [[ ! -e $processed_monolingual_path ]]; then
-        python preprocess_scripts/prepare_monolingual_data.py --input_file \
-        $raw_monolingual_path \
-        --output_path data/monolingual_data/${lang}/${lang}_monolingual_full.txt
+    python preprocess_scripts/prepare_monolingual_data.py --input_file \
+    $raw_monolingual_path \
+    --output_path data/monolingual_data/${lang}/${lang}_monolingual_full.txt
 
-        # Randomly sample 6000 sentences from the original set, to reduce computational load
-        cp data/monolingual_data/${lang}/${lang}_monolingual_full.txt $processed_monolingual_path
-        shuf $processed_monolingual_path -o $processed_monolingual_path
-        head -n $data_size $processed_monolingual_path >> data/monolingual_data/${lang}/${lang}_monolingual_copy.txt
-        mv data/monolingual_data/${lang}/${lang}_monolingual_copy.txt $processed_monolingual_path
-    fi
+    # Randomly sample 6000 sentences from the original set, to reduce computational load
+    cp data/monolingual_data/${lang}/${lang}_monolingual_full.txt $processed_monolingual_path
+    shuf $processed_monolingual_path -o $processed_monolingual_path
+    #    head -n $mono_data_size $processed_monolingual_path >> data/monolingual_data/${lang}/${lang}_monolingual_copy.txt
+    #    mv data/monolingual_data/${lang}/${lang}_monolingual_copy.txt $processed_monolingual_path
 done
 
 FAIR_SCRIPTS=fairseq/scripts
@@ -45,7 +38,7 @@ TOKENIZER=mosesdecoder/scripts/tokenizer/tokenizer.perl
 VOCAB_SIZE=8000
 
 
-for lrl in ben kur mar aze bel rus tur
+for lrl in aze bel kur mar ben
 do
     echo "lrl: ${lrl}"
     # Eng -> others is O2M

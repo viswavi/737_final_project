@@ -3,7 +3,8 @@
 # This script consumes the stdout dumped from running translation for a file, and
 # produces data in the raw corpus format, with translated "target" as backtranslated "source".
 # It can alternatively take in pure monolingual data, treating the monolingual target data
-# as both source and target.
+# as both source and target. In this case, it uses the "mono_to_parallel_ratio" argument
+# to decide how much monolingual data to use, relative to parallel data.
 #
 ## To generate new parallel corpus augmented with backtranslated data:
 # python process_translation_output.py --output_path <filepath> \
@@ -37,12 +38,16 @@ def main():
         help='Clean "target" text data to pair with backtranslated "source"')
     parser.add_argument('--direction', required=True,
         help='M2O (training foreign-to-English model) or O2M (English-to-foreign)')
-    parser.add_argument('--clean_target_data', '-clean',
-        help='Whether to combine backtranslated data with original target-to-source data')
+    parser.add_argument('--clean_target_data', '--clean_target',
+        help='Monolingual data on the target side to use for data augmentation')
+    parser.add_argument('--clean_source_data', '--clean_source',
+        help='Monolingual data on the source side to use for data augmentation')
     parser.add_argument('--backtranslation_augmentation', '-bt',
         help='Perform data augmentation via backtranslation', action='store_true')
-    parser.add_argument('--monolingual_data_augmentation', '-mono',
+    parser.add_argument('--monolingual_data_augmentation', '-mono_target',
         help='If true, copy target data as "source" data', action='store_true')
+    parser.add_argument('--source_data_augmentation', '-mono_source',
+        help='If true, copy source data as "target" data', action='store_true')
     parser.add_argument('--monolingual_noisy_data_augmentation', '-mono_noise',
         help='If true, copy target data as "source" data and swap n pair of words', action='store_true')
     parser.add_argument('--swap_num_pairs', '-n', type=int, default=1, help='Num of pairs to swap, if -mono_noise is true')
@@ -52,13 +57,18 @@ def main():
         help='If true, training data will be filtered', action='store_true')    
     parser.add_argument('--shuffle_lines', action='store_true',
         help='Whether or not to shuffle lines of data')
+    parser.add_argument('--mono_to_parallel_ratio', type=float, default=2.0,
+        help='Ratio of monolingual data to parallel data to use')
     args = parser.parse_args()
 
+    parallel_data_size = len(open(args.clean_parallel_data_path).read().split("\n")) - 1
+    monolingual_data_size = int(args.mono_to_parallel_ratio * parallel_data_size)
 
     clean_target_data = open(args.clean_target_data).read().split("\n")
     outlines = []
 
     if args.backtranslation_augmentation:
+        backtranslation_lines = []
         backtranslated_output = open(args.backtranslated_data).read().split("\n")
         for line in tqdm(backtranslated_output):
             if len(line) <= 6:
@@ -72,29 +82,35 @@ def main():
             clean_target_line = clean_target_data[line_number]
             if args.direction == "O2M":
                 if args.tagged_backtranslation:
-                    outlines.append(f"{clean_target_line} ||| <noisy> {backtranslated_sentence}")
+                    backtranslation_lines.append(f"{clean_target_line} ||| <noisy> {backtranslated_sentence}")
                 else:
-                    outlines.append(f"{clean_target_line} ||| {backtranslated_sentence}")
+                    backtranslation_lines.append(f"{clean_target_line} ||| {backtranslated_sentence}")
             elif args.direction == "M2O":
                 if args.tagged_backtranslation:
-                    outlines.append(f"<noisy> {backtranslated_sentence} ||| {clean_target_line}")
+                    backtranslation_lines.append(f"<noisy> {backtranslated_sentence} ||| {clean_target_line}")
                 else:
-                    outlines.append(f"{backtranslated_sentence} ||| {clean_target_line}")
+                    backtranslation_lines.append(f"{backtranslated_sentence} ||| {clean_target_line}")
             else:
                 raise ValueError("Direction should be O2M or M2O")
+        outlines.extend(backtranslation_lines[:monolingual_data_size])
     if args.monolingual_data_augmentation:
-        for source_line in clean_target_data:
-            if len(source_line.split()) > 0:
+        copied_lines = []
+        for target_line in clean_target_data:
+            if len(target_line.split()) > 0:
                 # skipping empty lines, add monolingual data as source and target
-                outlines.append(f"{source_line} ||| {source_line}")
+                copied_lines.append(f"{target_line} ||| {target_line}")
+        outlines.extend(copied_lines[:monolingual_data_size])
+
 
     if args.monolingual_noisy_data_augmentation:
+        noised_copied_data = []
         for source_line in clean_target_data:
             if len(source_line.split()) > 0:
                 # skipping empty lines
                 # add noisy monolingual data as source and monolingual data as target
                 noisy_line = add_noise(source_line, args.swap_num_pairs)
-                outlines.append(f"{noisy_line} ||| {source_line}")
+                noised_copied_data.append(f"{noisy_line} ||| {source_line}")
+        outlines.extend(noised_copied_data[:monolingual_data_size])
 
     # COMMENT THIS OUT IF YOU WANT NO FILTERING
     if args.filtered_tagged:

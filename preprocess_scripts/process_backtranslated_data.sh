@@ -50,7 +50,7 @@ for lang in bel aze tur rus kur mar ben; do
         output_directory=${backtranslation_data_prefix}_${direction}/ted_raw/${lang}_eng
 
 
-        echo creating directory $output_directory
+        echo "creating directory $output_directory"
         backtranslation_directory=data/monolingual_data
         mkdir -p $output_directory
 
@@ -64,6 +64,7 @@ for lang in bel aze tur rus kur mar ben; do
 
         backtranslated_data=$(pwd)/${backtranslation_directory}/${lang}/${srclang}_bilingual_translated.txt
         clean_target_data=$(pwd)/${backtranslation_directory}/${trglang}/${trglang}_monolingual.txt
+        clean_source_data=$(pwd)/${backtranslation_directory}/${srclang}/${srclang}_monolingual.txt
         clean_parallel_corpus_path=$(pwd)/${clean_directory}/ted-train.orig.${lang}-eng
 
         if [ $augmentation_method = backtranslated ]; then
@@ -120,8 +121,7 @@ for lang in bel aze tur rus kur mar ben; do
             --tagged_backtranslation \
             --filtered_tagged \
             --shuffle_lines
-	else
-            python preprocess_scripts/process_translation_output.py \
+        else python preprocess_scripts/process_translation_output.py \
                 --output_path $training_output_path \
                 --clean_target_data $clean_target_data \
                 --clean_parallel_data_path $clean_parallel_corpus_path \
@@ -129,6 +129,7 @@ for lang in bel aze tur rus kur mar ben; do
                 --monolingual_data_augmentation \
                 --shuffle_lines
         fi
+
     if [[ $augmentation_method = tagged_backtranslated || $augmentation_method = filtered_tagged_backtranslated ]]; then
         if [ $direction = O2M ]; then
             sed -e 's/|||/||| <clean>/' -i $dev_output_path
