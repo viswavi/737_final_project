@@ -58,6 +58,8 @@ def main():
         help='If true, training data will be filtered', action='store_true')   
     parser.add_argument('--dummy_monoaugmentation', '-dummy_mono_target',
         help='If true, copy target data as "source" data', action='store_true')
+    parser.add_argument('--dummy_monoaugmentation_source', '-dummy_mono_source_target',
+        help='If true, copy target data as "source" data', action='store_true')
     parser.add_argument('--shuffle_lines', action='store_true',
         help='Whether or not to shuffle lines of data')
     parser.add_argument('--mono_to_parallel_ratio', type=float, default=2.0,
@@ -126,6 +128,21 @@ def main():
                 ind += len(target_line.split())
                 # skipping empty lines, add monolingual data as source and target
                 copied_lines.append(f"{dummy_line} ||| {dummy_line}")
+        outlines.extend(copied_lines[:monolingual_data_size])
+
+    if args.dummy_monoaugmentation_source:
+        ind = 0
+        dummy_words = get_dummy_words(4)
+        copied_lines = []
+        for target_line in clean_target_data:
+            if len(target_line.split()) > 0:
+                dummy_line = ' '.join(map(str,dummy_words[ind:ind+len(target_line.split())]))
+                ind += len(target_line.split())
+                # skipping empty lines, add monolingual data as source and target
+                if args.direction == "O2M":
+                    copied_lines.append(f"{target_line} ||| {dummy_line}")
+                else:
+                    copied_lines.append(f"{dummy_line} ||| {target_line}")
         outlines.extend(copied_lines[:monolingual_data_size])
 
     if args.filtered_tagged:

@@ -18,6 +18,8 @@ elif [[ $# -eq 0  || $1 == "filtered_tagged_backtranslated" ]]; then
     augmentation_method=filtered_tagged_backtranslated
 elif [[ $# -eq 0  || $1 == "dummy_monoaugment" ]]; then 
     augmentation_method=dummy_monoaugment
+elif [[ $# -eq 0  || $1 == "dummy_monoaugment_source" ]]; then 
+    augmentation_method=dummy_monoaugment_source    
 elif [[ $# -eq 1  || $1 == "noisy_monoaugment" ]]; then
     augmentation_method=noisy_monoaugment
     swap_num_pairs=2
@@ -130,6 +132,14 @@ for lang in bel aze tur rus kur mar ben; do
                 --clean_parallel_data_path $clean_parallel_corpus_path \
                 --direction ${direction} \
                 --dummy_monoaugmentation \
+                --shuffle_lines
+        elif [ $augmentation_method = dummy_monoaugment_source ]; then
+            python preprocess_scripts/process_translation_output.py \
+                --output_path $training_output_path \
+                --clean_target_data $clean_target_data \
+                --clean_parallel_data_path $clean_parallel_corpus_path \
+                --direction ${direction} \
+                --dummy_monoaugmentation_source \
                 --shuffle_lines
         else python preprocess_scripts/process_translation_output.py \
                 --output_path $training_output_path \
