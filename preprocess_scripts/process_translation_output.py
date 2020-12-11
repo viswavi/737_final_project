@@ -24,6 +24,7 @@ import argparse
 import random
 from tqdm import tqdm
 import re
+import itertools
 
 def main():
     parser = argparse.ArgumentParser(description=(
@@ -54,7 +55,9 @@ def main():
     parser.add_argument('--tagged_backtranslation', '-tagged', 
         help='If true, training data will be prepended with noisy or clean', action='store_true')
     parser.add_argument('--filtered_tagged', '-filtered', 
-        help='If true, training data will be filtered', action='store_true')    
+        help='If true, training data will be filtered', action='store_true')   
+    parser.add_argument('--dummy_monoaugmentation', '-dummy_mono_target',
+        help='If true, copy target data as "source" data', action='store_true')
     parser.add_argument('--shuffle_lines', action='store_true',
         help='Whether or not to shuffle lines of data')
     parser.add_argument('--mono_to_parallel_ratio', type=float, default=2.0,
@@ -93,6 +96,7 @@ def main():
             else:
                 raise ValueError("Direction should be O2M or M2O")
         outlines.extend(backtranslation_lines[:monolingual_data_size])
+    
     if args.monolingual_data_augmentation:
         copied_lines = []
         for target_line in clean_target_data:
@@ -112,7 +116,18 @@ def main():
                 noised_copied_data.append(f"{noisy_line} ||| {source_line}")
         outlines.extend(noised_copied_data[:monolingual_data_size])
 
-    # COMMENT THIS OUT IF YOU WANT NO FILTERING
+    if args.dummy_monoaugmentation:
+        ind = 0
+        dummy_words = get_dummy_words(4)
+        copied_lines = []
+        for target_line in clean_target_data:
+            if len(target_line.split()) > 0:
+                dummy_line = ' '.join(map(str,dummy_words[ind:ind+len(target_line.split())]))
+                ind += len(target_line.split())
+                # skipping empty lines, add monolingual data as source and target
+                copied_lines.append(f"{dummy_line} ||| {dummy_line}")
+        outlines.extend(copied_lines[:monolingual_data_size])
+
     if args.filtered_tagged:
         outlines = list(filter(lambda line: check_keep(line, "noisy"), outlines))
 
@@ -168,6 +183,13 @@ def check_keep(line, tag):
         res = False
 
     return res
+
+def get_dummy_words(length):
+    characters = [u'\u0b95', u'\u0b99', u'\u0b9a', u'\u0b9e', u'\u0b9f', u'\u0ba3', u'\u0ba4', u'\u0ba8', u'\u0baa', u'\u0ba4', u'\u0bae', u'\u0baf', u'\u0bb0', u'\u0bb2', u'\u0bb5', u'\u0bb4',  u'\u0bb3', u'\u0bb1',  u'\u0ba9', u'\u0b85', u'\u0b86', u'\u0b87', u'\u0b88', u'\u0b89', u'\u0b8A', u'\u0b8E', u'\u0b8F', u'\u0b90', u'\u0b92', u'\u0b93', u'\u0b94']
+    words = []
+    for i in itertools.product(characters, repeat=length):
+        words.append(''.join(map(str, i)))
+    return words
 
 if __name__ == "__main__":
     main()
