@@ -52,6 +52,8 @@ def main():
     parser.add_argument('--monolingual_noisy_data_augmentation', '-mono_noise',
         help='If true, copy target data as "source" data and swap n pair of words', action='store_true')
     parser.add_argument('--swap_num_pairs', '-n', type=int, default=1, help='Num of pairs to swap, if -mono_noise is true')
+    parser.add_argument('--monolingual_masked_data_augmentation', '-mono_masked', help='If true, copy target data as "source" data and mask n words', action='store_true')
+    parser.add_argument('--num_masks', '-m', type=int, default=1, help='Num of words to mask, if -mono_masked is true')
     parser.add_argument('--tagged_backtranslation', '-tagged', 
         help='If true, training data will be prepended with noisy or clean', action='store_true')
     parser.add_argument('--filtered_tagged', '-filtered', 
@@ -117,6 +119,16 @@ def main():
                 noisy_line = add_noise(source_line, args.swap_num_pairs)
                 noised_copied_data.append(f"{noisy_line} ||| {source_line}")
         outlines.extend(noised_copied_data[:monolingual_data_size])
+    
+    if args.monolingual_masked_data_augmentation:
+        masked_copied_data = []
+        for source_line in clean_target_data:
+            if len(source_line.split()) > 0:
+                # skipping empty lines
+                # add masked monolingual data as source and monolingual data as target
+                masked_line = add_masking(source_line, args.num_masks)
+                masked_copied_data.append(f"{masked_line} ||| {source_line}")
+        outlines.extend(masked_copied_data[:monolingual_data_size])
 
     if args.dummy_monoaugmentation:
         ind = 0
@@ -189,6 +201,21 @@ def swap_word(line, l):
         if counter > 3:
             return line
     line[random_idx_1], line[random_idx_2] = line[random_idx_2], line[random_idx_1]
+    return line
+
+def add_masking(source_line, num_masks):
+    source_line = source_line.split()
+    l = len(source_line)
+    if num_masks > (l//2):
+        num_masks = l//2
+    masked_line = source_line.copy()
+    masked_line = set_mask(masked_line, num_masks, l)
+    return " ".join(masked_line)
+
+def set_mask(line, num_masks, l):
+    idxs = random.sample(range(0, l-1), num_masks)
+    for idx in idxs:
+        line[idx] = "<**MASK**>"
     return line
 
 def check_keep(line, tag):
