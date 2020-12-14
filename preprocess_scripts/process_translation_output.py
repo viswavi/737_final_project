@@ -156,7 +156,7 @@ def main():
                 else:
                     copied_lines.append(f"{dummy_line} ||| {target_line}")
         outlines.extend(copied_lines[:monolingual_data_size])
-
+    
     if args.filtered_tagged:
         outlines = list(filter(lambda line: check_keep(line, "noisy"), outlines))
 

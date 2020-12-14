@@ -10,6 +10,8 @@ if [[ $# -ge 1 && $1 == "monoaugment" ]]; then
     augmentation_method=monoaugment
 elif [[ $# -ge 1 && $1 == "mono_and_bt" ]]; then
     augmentation_method=mono_and_bt
+elif [[ $# -eq 1  || $1 == "third_lang" ]]; then
+    augmentation_method=third_lang
 elif [[ $# -eq 0  || $1 == "backtranslated" ]]; then
     augmentation_method=backtranslated
 elif [[ $# -eq 0  || $1 == "tagged_backtranslated" ]]; then 
@@ -49,12 +51,20 @@ done
 for lang in bel aze tur rus kur mar ben; do
     for direction in O2M M2O; do
         if [ $direction = O2M ]; then
-            srclang=eng
+	    if [ $augmentation_method = third_lang ]; then
+		srclang=deu    
+	    else
+                srclang=eng
+	    fi
             trglang=$lang
         else
             srclang=${lang}
-            trglang=eng
-        fi
+            if [ $augmentation_method = third_lang ]; then
+                trglang=deu
+            else
+		trglang=eng
+            fi
+	fi
 
         clean_directory=data/ted_raw/${lang}_eng
         output_directory=${backtranslation_data_prefix}_${direction}/ted_raw/${lang}_eng
@@ -98,6 +108,16 @@ for lang in bel aze tur rus kur mar ben; do
                 --backtranslation_augmentation \
                 --monolingual_data_augmentation \
                 --shuffle_lines
+	
+    	elif [ $augmentation_method = third_lang ]; then
+            python preprocess_scripts/process_translation_output.py \
+            --output_path $training_output_path \
+            --clean_target_data $clean_target_data \
+            --clean_parallel_data_path $clean_parallel_corpus_path \
+            --direction ${direction} \
+            --monolingual_data_augmentation \
+            --shuffle_lines
+
     	elif [ $augmentation_method = noisy_monoaugment ]; then
             # Produce training file, using a concatenation of noisy monolingual data and clean data
             python preprocess_scripts/process_translation_output.py \
