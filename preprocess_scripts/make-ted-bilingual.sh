@@ -5,9 +5,11 @@ if [ ! -d mosesdecoder ]; then
   git clone https://github.com/moses-smt/mosesdecoder.git
 fi
 
+eng_token=en_XX
+
 if [ $# -ge 1 ]; then
     srclang=$1
-    if [ "$srclang" = "eng" ]; then
+    if [ "$srclang" = "${eng_token}" ]; then
         echo "You only need to run this once from your source language to 
         target language - don't need to run it both ways!"
         exit 1
@@ -39,10 +41,10 @@ LANS=(
 
 for i in ${!LANS[*]}; do
   LAN=${LANS[$i]}
-  mkdir -p "$PROC_DDIR"/"$LAN"_eng
-  for f in "$RAW_DDIR"/"$LAN"_eng/*.orig.*-eng  ; do
-    src=`echo $f | sed 's/-eng$//g'`
-    trg=`echo $f | sed 's/\.[^\.]*$/.eng/g'`
+  mkdir -p "$PROC_DDIR"/"$LAN"_${eng_token}
+  for f in "$RAW_DDIR"/"$LAN"_${eng_token}/*.orig.*-${eng_token}  ; do
+    src=`echo $f | sed 's/-en_XX$//g'`
+    trg=`echo $f | sed 's/\.[^\.]*$/.en_XX/g'`
 
     if [ ! -f "$src" ]; then
       echo "src=$src, trg=$trg"
@@ -50,7 +52,7 @@ for i in ${!LANS[*]}; do
       python preprocess_scripts/cut-corpus.py 1 < $f > $trg
     fi
   done
-  for f in "$RAW_DDIR"/"$LAN"_eng/*.orig.{eng,$LAN} ; do
+  for f in "$RAW_DDIR"/"$LAN"_${eng_token}/*.orig.{${eng_token},$LAN} ; do
     f1=${f/orig/mtok}
     if [ ! -f "$f1" ]; then
       echo "tokenize $f1..."
@@ -58,46 +60,46 @@ for i in ${!LANS[*]}; do
     fi
   done
   # learn BPE with sentencepiece
-  TRAIN_FILES="$RAW_DDIR"/"$LAN"_eng/ted-train.mtok."$LAN","$RAW_DDIR"/"$LAN"_eng/ted-train.mtok.eng
+  TRAIN_FILES="$RAW_DDIR"/"$LAN"_${eng_token}/ted-train.mtok."$LAN","$RAW_DDIR"/"$LAN"_${eng_token}/ted-train.mtok.${eng_token}
   echo "learning joint BPE over ${TRAIN_FILES}..."
   python "$SPM_TRAIN" \
 	--input=$TRAIN_FILES \
-	--model_prefix="$PROC_DDIR"/"$LAN"_eng/spm"$VOCAB_SIZE" \
+	--model_prefix="$PROC_DDIR"/"$LAN"_${eng_token}/spm"$VOCAB_SIZE" \
 	--vocab_size=$VOCAB_SIZE \
 	--character_coverage=1.0 \
 	--model_type=bpe
 
   python "$SPM_ENCODE" \
-	--model="$PROC_DDIR"/"$LAN"_eng/spm"$VOCAB_SIZE".model \
+	--model="$PROC_DDIR"/"$LAN"_${eng_token}/spm"$VOCAB_SIZE".model \
 	--output_format=piece \
-	--inputs "$RAW_DDIR"/"$LAN"_eng/ted-train.mtok."$LAN" "$RAW_DDIR"/"$LAN"_eng/ted-train.mtok.eng  \
-	--outputs "$PROC_DDIR"/"$LAN"_eng/ted-train.spm"$VOCAB_SIZE"."$LAN" "$PROC_DDIR"/"$LAN"_eng/ted-train.spm"$VOCAB_SIZE".eng \
+	--inputs "$RAW_DDIR"/"$LAN"_${eng_token}/ted-train.mtok."$LAN" "$RAW_DDIR"/"$LAN"_${eng_token}/ted-train.mtok.${eng_token}  \
+	--outputs "$PROC_DDIR"/"$LAN"_${eng_token}/ted-train.spm"$VOCAB_SIZE"."$LAN" "$PROC_DDIR"/"$LAN"_${eng_token}/ted-train.spm"$VOCAB_SIZE".${eng_token} \
 	--min-len 1 --max-len 200 
  
   echo "encoding valid/test data with learned BPE..."
   for split in dev test;
   do
   python "$SPM_ENCODE" \
-	--model="$PROC_DDIR"/"$LAN"_eng/spm"$VOCAB_SIZE".model \
+	--model="$PROC_DDIR"/"$LAN"_${eng_token}/spm"$VOCAB_SIZE".model \
 	--output_format=piece \
-	--inputs "$RAW_DDIR"/"$LAN"_eng/ted-"$split".mtok."$LAN" "$RAW_DDIR"/"$LAN"_eng/ted-"$split".mtok.eng  \
-	--outputs "$PROC_DDIR"/"$LAN"_eng/ted-"$split".spm"$VOCAB_SIZE"."$LAN" "$PROC_DDIR"/"$LAN"_eng/ted-"$split".spm"$VOCAB_SIZE".eng  
+	--inputs "$RAW_DDIR"/"$LAN"_${eng_token}/ted-"$split".mtok."$LAN" "$RAW_DDIR"/"$LAN"_${eng_token}/ted-"$split".mtok.${eng_token}  \
+	--outputs "$PROC_DDIR"/"$LAN"_${eng_token}/ted-"$split".spm"$VOCAB_SIZE"."$LAN" "$PROC_DDIR"/"$LAN"_${eng_token}/ted-"$split".spm"$VOCAB_SIZE".${eng_token}  
   done
 
   echo "Binarize the data..."
-  fairseq-preprocess --source-lang $LAN --target-lang eng \
+  fairseq-preprocess --source-lang $LAN --target-lang ${eng_token} \
 	--joined-dictionary \
-	--trainpref "$PROC_DDIR"/"$LAN"_eng/ted-train.spm"$VOCAB_SIZE" \
-	--validpref "$PROC_DDIR"/"$LAN"_eng/ted-dev.spm"$VOCAB_SIZE" \
-	--testpref "$PROC_DDIR"/"$LAN"_eng/ted-test.spm"$VOCAB_SIZE" \
-	--destdir $BINARIZED_DDIR/"$LAN"_eng/
+	--trainpref "$PROC_DDIR"/"$LAN"_${eng_token}/ted-train.spm"$VOCAB_SIZE" \
+	--validpref "$PROC_DDIR"/"$LAN"_${eng_token}/ted-dev.spm"$VOCAB_SIZE" \
+	--testpref "$PROC_DDIR"/"$LAN"_${eng_token}/ted-test.spm"$VOCAB_SIZE" \
+	--destdir $BINARIZED_DDIR/"$LAN"_${eng_token}/
 
   echo "Binarize the data..."
-  fairseq-preprocess --source-lang eng --target-lang $LAN \
+  fairseq-preprocess --source-lang ${eng_token} --target-lang $LAN \
 	--joined-dictionary \
-	--trainpref "$PROC_DDIR"/"$LAN"_eng/ted-train.spm"$VOCAB_SIZE" \
-	--validpref "$PROC_DDIR"/"$LAN"_eng/ted-dev.spm"$VOCAB_SIZE" \
-	--testpref "$PROC_DDIR"/"$LAN"_eng/ted-test.spm"$VOCAB_SIZE" \
-	--destdir $BINARIZED_DDIR/eng_"$LAN"/
+	--trainpref "$PROC_DDIR"/"$LAN"_${eng_token}/ted-train.spm"$VOCAB_SIZE" \
+	--validpref "$PROC_DDIR"/"$LAN"_${eng_token}/ted-dev.spm"$VOCAB_SIZE" \
+	--testpref "$PROC_DDIR"/"$LAN"_${eng_token}/ted-test.spm"$VOCAB_SIZE" \
+	--destdir $BINARIZED_DDIR/${eng_token}_"$LAN"/
 
 done
