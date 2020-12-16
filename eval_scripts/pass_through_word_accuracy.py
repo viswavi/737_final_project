@@ -1,5 +1,5 @@
 # Example usage:
-# python eval_scripts/find_pass_through_words.py \
+# python eval_scripts/pass_through_word_accuracy.py \
 # --decoding_file fairseq/checkpoints_monoaugment_for_M2O/ted_aze_spm8000/aze_eng/test_b5.log 
 
 import argparse
@@ -133,7 +133,7 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser()
 
     parser.add_argument("--decoding_file", type=str, default=None, help="Fairseq-generated file of translation decodings")
-    parser.add_argument("--label_file", type=str, required=True, help="Fairseq-generated file of translation decodings")
+    parser.add_argument("--label_file", type=str, default=None, help="Fairseq-generated file of translation decodings")
     args = parser.parse_args()
     if (args.decoding_file is None) == (args.label_file is None): # hacky xor
         raise ValueError("Either a decoding file or labels file should be supplied - not both")
