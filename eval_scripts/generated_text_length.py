@@ -26,7 +26,7 @@ def compute_sentence_lengths(parallel_sentences):
         label_lengths.append(len(target_labeled_tokens))
         predicted_lengths.append(len(target_predicted_tokens))
 
-    avg_label_length = float(sum(predicted_lengths)) / len(predicted_lengths)
+    avg_label_length = float(sum(label_lengths)) / len(label_lengths)
     avg_predicted_length = float(sum(predicted_lengths)) / len(predicted_lengths)
     return avg_label_length, avg_predicted_length
 
