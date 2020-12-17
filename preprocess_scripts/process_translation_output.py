@@ -57,9 +57,13 @@ def main():
     parser.add_argument('--tagged_backtranslation', '-tagged', 
         help='If true, training data will be prepended with noisy or clean', action='store_true')
     parser.add_argument('--filtered_tagged', '-filtered', 
-        help='If true, training data will be filtered', action='store_true')   
+        help='If true, training data will be filtered', action='store_true')
     parser.add_argument('--dummy_monoaugmentation', '-dummy_mono_target',
-        help='If true, copy target data as "source" data', action='store_true')
+        help='If true, copy target data as "source" data', action='store_true')   
+    parser.add_argument('--dummy_monoaugment_duplicated', '-dummy_mono_target_dup',
+        help='If true, copy dummy data as source and target, duplicating each word twice on target side', action='store_true')
+    parser.add_argument('--dummy_monoaugmentation_shuffled', '-dummy_mono_target_shuffled',
+        help='If true, copy dummy data as source and target, but shuffle words in target', action='store_true')
     parser.add_argument('--dummy_monoaugmentation_source', '-dummy_mono_source_target',
         help='If true, copy target data as "source" data', action='store_true')
     parser.add_argument('--shuffle_lines', action='store_true',
@@ -140,6 +144,48 @@ def main():
                 ind += len(target_line.split())
                 # skipping empty lines, add monolingual data as source and target
                 copied_lines.append(f"{dummy_line} ||| {dummy_line}")
+        outlines.extend(copied_lines[:monolingual_data_size])
+
+    if args.dummy_monoaugmentation_shuffled:
+        ind = 0
+        dummy_words = get_dummy_words(4, shuffle=True)
+        copied_lines = []
+        for target_line in clean_target_data:
+            if len(target_line.split()) > 0:
+                dummy_words_source = []
+                dummy_words_target = []
+                for w in dummy_words[ind:ind+len(target_line.split())]:
+                    dummy_words_source.append(w)
+                    dummy_words_target.append(w)
+                random.shuffle(dummy_words_target)
+                dummy_line_source = ' '.join(dummy_words_source)
+                dummy_line_target = ' '.join(dummy_words_target)
+
+                ind += len(target_line.split())
+                if args.direction == "O2M":
+                    copied_lines.append(f"{dummy_line_target} ||| {dummy_line_source}")
+                else:
+                    copied_lines.append(f"{dummy_line_source} ||| {dummy_line_target}")
+        outlines.extend(copied_lines[:monolingual_data_size])
+    
+    if args.dummy_monoaugment_duplicated:
+        ind = 0
+        dummy_words = get_dummy_words(4)
+        copied_lines = []
+        for target_line in clean_target_data:
+            if len(target_line.split()) > 0:
+                dummy_words_source = []
+                dummy_words_target = []
+                for w in dummy_words[ind:ind+len(target_line.split())]:
+                    dummy_words_source.append(w)
+                    dummy_words_target.extend([w, w])
+                dummy_line_source = ' '.join(dummy_words_source)
+                dummy_line_target = ' '.join(dummy_words_target)
+                ind += len(target_line.split())
+                if args.direction == "O2M":
+                    copied_lines.append(f"{dummy_line_target} ||| {dummy_line_source}")
+                else:
+                    copied_lines.append(f"{dummy_line_source} ||| {dummy_line_target}")
         outlines.extend(copied_lines[:monolingual_data_size])
 
     if args.dummy_monoaugmentation_source:
@@ -228,11 +274,13 @@ def check_keep(line, tag):
 
     return res
 
-def get_dummy_words(length):
+def get_dummy_words(length, shuffle=False):
     characters = [u'\u0b95', u'\u0b99', u'\u0b9a', u'\u0b9e', u'\u0b9f', u'\u0ba3', u'\u0ba4', u'\u0ba8', u'\u0baa', u'\u0ba4', u'\u0bae', u'\u0baf', u'\u0bb0', u'\u0bb2', u'\u0bb5', u'\u0bb4',  u'\u0bb3', u'\u0bb1',  u'\u0ba9', u'\u0b85', u'\u0b86', u'\u0b87', u'\u0b88', u'\u0b89', u'\u0b8A', u'\u0b8E', u'\u0b8F', u'\u0b90', u'\u0b92', u'\u0b93', u'\u0b94']
     words = []
     for i in itertools.product(characters, repeat=length):
         words.append(''.join(map(str, i)))
+    if shuffle:
+        random.shuffle(words)
     return words
 
 if __name__ == "__main__":

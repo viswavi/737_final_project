@@ -3,7 +3,7 @@
 if [ $# -ge 2 ]; then
     srclang=$1
     trglang=$2
-	if [ "$trglang" = "eng" ]; then
+	if [[ "$trglang" = "eng" || "$trglang" = "en_XX" ]]; then
 		lrlang=$srclang
 	else
 		lrlang=$trglang

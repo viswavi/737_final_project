@@ -20,8 +20,12 @@ elif [[ $# -eq 0  || $1 == "filtered_tagged_backtranslated" ]]; then
     augmentation_method=filtered_tagged_backtranslated
 elif [[ $# -eq 0  || $1 == "dummy_monoaugment" ]]; then 
     augmentation_method=dummy_monoaugment
-elif [[ $# -eq 0  || $1 == "dummy_monoaugment_source" ]]; then 
-    augmentation_method=dummy_monoaugment_source    
+elif [[ $# -eq 0  || $1 == "dummy_monoaugmentation_shuffled" ]]; then 
+    augmentation_method=dummy_monoaugmentation_shuffled
+elif [[ $# -eq 0  || $1 == "dummy_monoaugment_duplicated" ]]; then 
+    augmentation_method=dummy_monoaugment_duplicated
+elif [[ $# -eq 0  || $1 == "dummy_monoaugment_source" ]]; then
+    augmentation_method=dummy_monoaugment_source
 elif [[ $# -eq 1  || $1 == "noisy_monoaugment" ]]; then
     augmentation_method=noisy_monoaugment
     swap_num_pairs=2
@@ -48,7 +52,9 @@ for direction in O2M M2O; do
     mkdir -p ${output_directory}/ted_raw
 done
 
-for lang in bel aze tur rus kur mar ben; do
+eng_token=eng
+
+for lang in hi_IN kk_KZ; do #bel aze tur rus kur mar ben; do
     for direction in O2M M2O; do
         if [ $direction = O2M ]; then
 	    if [ $augmentation_method = third_lang ]; then
@@ -62,12 +68,12 @@ for lang in bel aze tur rus kur mar ben; do
             if [ $augmentation_method = third_lang ]; then
                 trglang=deu
             else
-		trglang=eng
+		        trglang=eng
             fi
-	fi
+	    fi
 
-        clean_directory=data/ted_raw/${lang}_eng
-        output_directory=${backtranslation_data_prefix}_${direction}/ted_raw/${lang}_eng
+        clean_directory=data/ted_raw/${lang}_${eng_token}
+        output_directory=${backtranslation_data_prefix}_${direction}/ted_raw/${lang}_${eng_token}
 
 
         echo "creating directory $output_directory"
@@ -75,17 +81,17 @@ for lang in bel aze tur rus kur mar ben; do
         mkdir -p $output_directory
 
         # Copy dev and test files as is, from "clean" data directory
-        cp ${clean_directory}/ted-test.orig.${lang}-eng $output_directory/
-        cp ${clean_directory}/ted-dev.orig.${lang}-eng $output_directory/
+        cp ${clean_directory}/ted-test.orig.${lang}-${eng_token} $output_directory/
+        cp ${clean_directory}/ted-dev.orig.${lang}-${eng_token} $output_directory/
 
-        training_output_path=$(pwd)/${output_directory}/ted-train.orig.${lang}-eng
-        dev_output_path=$(pwd)/${output_directory}/ted-dev.orig.${lang}-eng
-        test_output_path=$(pwd)/${output_directory}/ted-test.orig.${lang}-eng
+        training_output_path=$(pwd)/${output_directory}/ted-train.orig.${lang}-${eng_token}
+        dev_output_path=$(pwd)/${output_directory}/ted-dev.orig.${lang}-${eng_token}
+        test_output_path=$(pwd)/${output_directory}/ted-test.orig.${lang}-${eng_token}
 
         backtranslated_data=$(pwd)/${backtranslation_directory}/${lang}/${srclang}_bilingual_translated.txt
         clean_target_data=$(pwd)/${backtranslation_directory}/${trglang}/${trglang}_monolingual.txt
         clean_source_data=$(pwd)/${backtranslation_directory}/${srclang}/${srclang}_monolingual.txt
-        clean_parallel_corpus_path=$(pwd)/${clean_directory}/ted-train.orig.${lang}-eng
+        clean_parallel_corpus_path=$(pwd)/${clean_directory}/ted-train.orig.${lang}-${eng_token}
 
         if [ $augmentation_method = backtranslated ]; then
             # Produce training file, using a concatenation of backtranslated data and clean data
@@ -168,6 +174,22 @@ for lang in bel aze tur rus kur mar ben; do
                 --clean_parallel_data_path $clean_parallel_corpus_path \
                 --direction ${direction} \
                 --dummy_monoaugmentation \
+                --shuffle_lines
+        elif [ $augmentation_method = dummy_monoaugmentation_shuffled ]; then
+            python preprocess_scripts/process_translation_output.py \
+                --output_path $training_output_path \
+                --clean_target_data $clean_target_data \
+                --clean_parallel_data_path $clean_parallel_corpus_path \
+                --direction ${direction} \
+                --dummy_monoaugmentation_shuffled \
+                --shuffle_lines
+        elif [ $augmentation_method = dummy_monoaugment_duplicated ]; then
+            python preprocess_scripts/process_translation_output.py \
+                --output_path $training_output_path \
+                --clean_target_data $clean_target_data \
+                --clean_parallel_data_path $clean_parallel_corpus_path \
+                --direction ${direction} \
+                --dummy_monoaugment_duplicated \
                 --shuffle_lines
         elif [ $augmentation_method = dummy_monoaugment_source ]; then
             python preprocess_scripts/process_translation_output.py \
