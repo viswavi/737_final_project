@@ -47,6 +47,10 @@ def main():
         help='Perform data augmentation via backtranslation', action='store_true')
     parser.add_argument('--monolingual_data_augmentation', '-mono_target',
         help='If true, copy target data as "source" data', action='store_true')
+    parser.add_argument('--repeated_mono_augmentation', '-repeated_target',
+        help='If true, re-copy target data from parallel corpus as "source" data', action='store_true')
+    parser.add_argument('--repeated_parallel_augmentation', '-repeated_parallel',
+        help='If true, duplicate lines of parallel data (basically, upweighting)', action='store_true')
     parser.add_argument('--source_data_augmentation', '-mono_source',
         help='If true, copy source data as "target" data', action='store_true')
     parser.add_argument('--monolingual_noisy_data_augmentation', '-mono_noise',
@@ -112,6 +116,40 @@ def main():
                 # skipping empty lines, add monolingual data as source and target
                 copied_lines.append(f"{target_line} ||| {target_line}")
         outlines.extend(copied_lines[:monolingual_data_size])
+
+    if args.repeated_mono_augmentation:
+        clean_data_lines = open(args.clean_parallel_data_path).read().split("\n")
+        # Drop final row, which is empty
+        clean_data_lines = clean_data_lines[:-1]
+        copied_lines = []
+        flag = True
+        while flag:
+            for line in clean_data_lines:
+                if args.direction == 'M2O':
+                    # target is English
+                    target_line = line.split("|||")[1].strip()
+                else:
+                    target_line = line.split("|||")[0].strip()
+                copied_lines.append(f"{target_line} ||| {target_line}")
+                if len(copied_lines) == monolingual_data_size:
+                    flag = False
+                    break
+        outlines.extend(copied_lines)
+
+    if args.repeated_parallel_augmentation:
+        clean_data_lines = open(args.clean_parallel_data_path).read().split("\n")
+        # Drop final row, which is empty
+        clean_data_lines = clean_data_lines[:-1]
+        copied_lines = []
+        flag = True
+        while flag:
+            for line in clean_data_lines:
+                copied_lines.append(line)
+                if len(copied_lines) == monolingual_data_size:
+                    flag = False
+                    break
+        outlines.extend(copied_lines)
+
 
 
     if args.monolingual_noisy_data_augmentation:

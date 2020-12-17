@@ -14,18 +14,22 @@ elif [[ $# -eq 1  || $1 == "third_lang" ]]; then
     augmentation_method=third_lang
 elif [[ $# -eq 0  || $1 == "backtranslated" ]]; then
     augmentation_method=backtranslated
-elif [[ $# -eq 0  || $1 == "tagged_backtranslated" ]]; then 
+elif [[ $# -eq 1  && $1 == "tagged_backtranslated" ]]; then 
     augmentation_method=tagged_backtranslated
-elif [[ $# -eq 0  || $1 == "filtered_tagged_backtranslated" ]]; then 
+elif [[ $# -eq 1  && $1 == "filtered_tagged_backtranslated" ]]; then 
     augmentation_method=filtered_tagged_backtranslated
-elif [[ $# -eq 0  || $1 == "dummy_monoaugment" ]]; then 
+elif [[ $# -eq 1  && $1 == "dummy_monoaugment" ]]; then 
     augmentation_method=dummy_monoaugment
-elif [[ $# -eq 0  || $1 == "dummy_monoaugmentation_shuffled" ]]; then 
+elif [[ $# -eq 1  && $1 == "dummy_monoaugmentation_shuffled" ]]; then 
     augmentation_method=dummy_monoaugmentation_shuffled
-elif [[ $# -eq 0  || $1 == "dummy_monoaugment_duplicated" ]]; then 
+elif [[ $# -eq 1  && $1 == "dummy_monoaugment_duplicated" ]]; then 
     augmentation_method=dummy_monoaugment_duplicated
-elif [[ $# -eq 0  || $1 == "dummy_monoaugment_source" ]]; then
+elif [[ $# -eq 1  && $1 == "dummy_monoaugment_source" ]]; then
     augmentation_method=dummy_monoaugment_source
+elif [[ $# -eq 1  && $1 == "repeated_mono_augmentation" ]]; then 
+    augmentation_method=repeated_mono_augmentation
+elif [[ $# -eq 1  && $1 == "repeated_parallel_augmentation" ]]; then 
+    augmentation_method=repeated_parallel_augmentation
 elif [[ $# -eq 1  || $1 == "noisy_monoaugment" ]]; then
     augmentation_method=noisy_monoaugment
     swap_num_pairs=2
@@ -199,13 +203,31 @@ for lang in hi_IN kk_KZ; do #bel aze tur rus kur mar ben; do
                 --direction ${direction} \
                 --dummy_monoaugmentation_source \
                 --shuffle_lines
+        elif [ $augmentation_method = repeated_parallel_augmentation ]; then
+            # Produce training file, using a concatenation of backtranslated data (preppended with the tag 'noisy') and clean data (prepended with the tag 'clean')
+            python preprocess_scripts/process_translation_output.py \
+            --output_path $training_output_path \
+            --clean_target_data $clean_target_data \
+            --clean_parallel_data_path $clean_parallel_corpus_path \
+            --direction ${direction} \
+            --repeated_parallel_augmentation \
+            --shuffle_lines
+        elif [ $augmentation_method = repeated_mono_augmentation ]; then
+            # Produce training file, using a concatenation of backtranslated data (preppended with the tag 'noisy') and clean data (prepended with the tag 'clean')
+            python preprocess_scripts/process_translation_output.py \
+            --output_path $training_output_path \
+            --clean_target_data $clean_target_data \
+            --clean_parallel_data_path $clean_parallel_corpus_path \
+            --direction ${direction} \
+            --repeated_mono_augmentation \
+            --shuffle_lines
         else python preprocess_scripts/process_translation_output.py \
-                --output_path $training_output_path \
-                --clean_target_data $clean_target_data \
-                --clean_parallel_data_path $clean_parallel_corpus_path \
-                --direction ${direction} \
-                --monolingual_data_augmentation \
-                --shuffle_lines
+            --output_path $training_output_path \
+            --clean_target_data $clean_target_data \
+            --clean_parallel_data_path $clean_parallel_corpus_path \
+            --direction ${direction} \
+            --monolingual_data_augmentation \
+            --shuffle_lines
         fi
 
     if [[ $augmentation_method = tagged_backtranslated || $augmentation_method = filtered_tagged_backtranslated ]]; then
